@@ -12,7 +12,7 @@ import imutils
 import time
 import cv2
 import pygame
-
+import requests
 
 def gstreamer_pipeline(
     capture_width=1920,
@@ -113,7 +113,7 @@ vs = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
 
 time.sleep(2.0)
 fps = FPS().start()
-
+cnt = 0
 # loop over the frames from the video stream
 while True:
     # grab the frame from the threaded video stream, resize it, and
@@ -164,24 +164,21 @@ while True:
             pygame.mixer.init()
             pygame.mixer.music.load("exa.mp3")
             pygame.mixer.music.set_volume(1)
-
+            longitude = 1.123213
+            latitude = 29.545345
+            label_tmp =  "\""+label+"\""
             print(label)
-            if "car" in label or "person" in label or "motorbike" in label:
+
+            if "dog" in label or "cat" in label or "horse" in label or "cow" in label:
                 cv2.rectangle(frame, (startX, startY), (endX, endY),COLORS[idx], 2)
                 y = startY - 15 if startY - 15 > 15 else startY + 15
                 cv2.putText(frame, label, (startX, y),  cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)  
-
-                if "dog" in label or "cat" in label or "horse" in label or "cow" in label:
-                    pygame.mixer.music.play()
-                    #time.sleep(0.75)                    
-            else:
-                if "dog" in label or "cat" in label or "horse" in label or "cow" in label:
-                    cv2.rectangle(frame, (startX, startY), (endX, endY),COLORS[idx], 2)
-                    y = startY - 15 if startY - 15 > 15 else startY + 15
-                    cv2.putText(frame, label, (startX, y),  cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)  
-                    pygame.mixer.music.play()
-                    #time.sleep(0.75)
-
+                data = {"value1":latitude,"value2":longitude,"value3":label_tmp}
+                pygame.mixer.music.play()
+                
+                if(cnt == 0):
+                    resp = requests.post('http://cloud.park-cloud.co19.kr/jetson_nano/post-data.php', params=data)
+                    cnt = cnt + 1
     # show the output frame
     cv2.namedWindow("Frame", cv2.WINDOW_NORMAL)
     cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)

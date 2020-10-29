@@ -199,7 +199,7 @@ def start_app():
             sensor_id=0,
             sensor_mode=3,
             flip_method=0,
-            display_height=540,
+            display_height=400,
             display_width=960,
         )
     )
@@ -211,33 +211,47 @@ def start_app():
             sensor_id=1,
             sensor_mode=3,
             flip_method=0,
-            display_height=540,
+            display_height=400,
             display_width=960,
         )
     )
     vs.start()
-
+    cv2.namedWindow("camwindow", cv2.WINDOW_AUTOSIZE)
     print('start opencv')
     time.sleep(2.0)
     fps = FPS().start()
     cnt = 0
     found_tmp = "chair"
-    # loop over the frames from the video stream
+
+
+#    cv2.namedWindow("camwindow", cv2.NORMAL)
+    if (
+        not left_camera.video_capture.isOpened()
+        or not vs.video_capture.isOpened()
+    ):
+        # Cameras did not open, or no camera attached
+
+        print("Unable to open any cameras")
+        # TODO: Proper Cleanup
+        SystemExit(0)
+   
+
     while True:
-        # grab the frame from the threaded video stream, resize it, and
-        # grab its imensions
-        ret, frame = vs.read()
-        #frame = cv2.flip(frame,0)
-        print('working')
-        frame = cv2.resize(frame, (400,400))
-        frame = imutils.resize(frame, width=400) #400
+#    while cv2.getWindowProperty("camwindow", 0) >= 0 :
+
+        _ , left_image=left_camera.read()
+        _ , frame=vs.read()
+
+
+        frame = cv2.resize(frame, (960,400))
+        frame = imutils.resize(frame, width=960) #400
         (fH, fW) = frame.shape[:2]
-        # if the input queue *is* empty, give the current frame to
-        # classify
+            # if the input queue *is* empty, give the current frame to
+            # classify
         if inputQueue.empty():
             inputQueue.put(frame)
 
-        # if the output queue *is not* empty, grab the detections
+            # if the output queue *is not* empty, grab the detections
         if not outputQueue.empty():
             detections = outputQueue.get()
 
@@ -246,7 +260,7 @@ def start_app():
         if detections is not None:
             # loop over the detections
             for i in np.arange(0, detections.shape[2]):
-                # extract the confidence (i.e., probability) associated
+              # extract the confidence (i.e., probability) associated
                 # with the prediction
                 confidence = detections[0, 0, i, 2]
 
@@ -290,37 +304,10 @@ def start_app():
                         found_tmp = pet 
                     else:
                         cnt=0
-    # show the output frame
-#        cv2.namedWindow("Frame", cv2.WINDOW_NORMAL)
-#        cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-        #up-side reverse
-        #frame = cv2.flip(frame,0)
-        #fra  me = np.array(frame ,dtype = object)
-#        frame = cv2.resize(frame, (720,480))
-#        cv2.imshow("Frame", frame)
-#        key = cv2.waitKey(1) & 0xFF
 
-        # if the `q` key was pressed, break from the loop
-#        if key == ord("q"):
-#            break
-        cv2.namedWindow("CSI Cameras", cv2.WINDOW_AUTOSIZE)
+            camera_images = np.hstack((left_image, frame))
+            cv2.imshow("camwindow", camera_images)
 
-        if (
-            not left_camera.video_capture.isOpened()
-            or not vs.video_capture.isOpened()
-        ):
-        # Cameras did not open, or no camera attached
-
-            print("Unable to open any cameras")
-        # TODO: Proper Cleanup
-            SystemExit(0)
-
-        while cv2.getWindowProperty("CSI Cameras", 0) >= 0 :
-        
-            _ , left_image=left_camera.read()
-            _ , right_image=vs.read()
-            camera_images = np.hstack((left_image, right_image))
-            cv2.imshow("CSI Cameras", camera_images)
 
         # This also acts as
             keyCode = cv2.waitKey(30) & 0xFF
@@ -328,13 +315,14 @@ def start_app():
             if keyCode == 27:
                 break
 
-        left_camera.stop()
-        left_camera.release()
-        vs.stop()
-        vs.release()
-        cv2.destroyAllWindows()
+    left_camera.stop()
+    left_camera.release()
+    vs.stop()
+    vs.release()
+    cv2.destroyAllWindows()
+    print('stop?;')
         # update the FPS counter
-        fps.update()
+    fps.update()
 
 # stop the timer and display FPS information
     fps.stop()

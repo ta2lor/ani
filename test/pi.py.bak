@@ -13,95 +13,19 @@ import time
 import cv2
 import pygame
 import requests
-import threading
-
-left_camera = None
-vs=None
-
-class CSI_Camera:
-
-    def __init__ (self) :
-        # Initialize instance variables
-        # OpenCV video capture element
-        self.video_capture = None
-        # The last captured image from the camera
-        self.frame = None
-        self.grabbed = False
-        # The thread where the video capture runs
-        self.read_thread = None
-        self.read_lock = threading.Lock()
-        self.running = False
-
-
-    def open(self, gstreamer_pipeline_string):
-        try:
-            self.video_capture = cv2.VideoCapture(
-                gstreamer_pipeline_string, cv2.CAP_GSTREAMER
-            )
-            
-        except RuntimeError:
-            self.video_capture = None
-            print("Unable to open camera")
-            print("Pipeline: " + gstreamer_pipeline_string)
-            return
-        # Grab the first frame to start the video capturing
-        self.grabbed, self.frame = self.video_capture.read()
-
-    def start(self):
-        if self.running:
-            print('Video capturing is already running')
-            return None
-        # create a thread to read the camera image
-        if self.video_capture != None:
-            self.running=True
-            self.read_thread = threading.Thread(target=self.updateCamera)
-            self.read_thread.start()
-        return self
-
-    def stop(self):
-        self.running=False
-        self.read_thread.join()
-
-    def updateCamera(self):
-        # This is the thread to read images from the camera
-        while self.running:
-            try:
-                grabbed, frame = self.video_capture.read()
-                with self.read_lock:
-                    self.grabbed=grabbed
-                    self.frame=frame
-            except RuntimeError:
-                print("Could not read image from camera")
-        # FIX ME - stop and cleanup thread
-        # Something bad happened
-        
-
-    def read(self):
-        with self.read_lock:
-            frame = self.frame.copy()
-            grabbed=self.grabbed
-        return grabbed, frame
-
-    def release(self):
-        if self.video_capture != None:
-            self.video_capture.release()
-            self.video_capture = None
-        # Now kill the thread
-        if self.read_thread != None:
-            self.read_thread.join()
 
 def gstreamer_pipeline(
-    sensor_id=0,
-    sensor_mode=3,
-    capture_width=1280,
-    capture_height=720,
-    display_width=1280,
-    display_height=720,
-    framerate=30,
+    sensor_id = 0,
+    sensor_mode = 3,
+    capture_width=1920,
+    capture_height=1080,
+    display_width=1920,
+    display_height=1080,
+    framerate=29,
     flip_method=0,
 ):
     return (
-        "nvarguscamerasrc sensor-id=%d sensor-mode=%d ! "
+        "nvarguscamerasrc ! "
         "video/x-raw(memory:NVMM), "
         "width=(int)%d, height=(int)%d, "
         "format=(string)NV12, framerate=(fraction)%d/1 ! "
@@ -110,8 +34,8 @@ def gstreamer_pipeline(
         "videoconvert ! "
         "video/x-raw, format=(string)BGR ! appsink"
         % (
-            sensor_id,
-            sensor_mode,
+#            sensor_id,
+#            sensor_mode,
             capture_width,
             capture_height,
             framerate,
@@ -193,31 +117,8 @@ def start_app():
     print("[INFO] starting video stream...")
     #vs = VideoStream(src=0).start()
     #vs = VideoStream(usePiCamera=True).start()
-    left_camera = CSI_Camera()
-    left_camera.open(
-        gstreamer_pipeline(
-            sensor_id=0,
-            sensor_mode=3,
-            flip_method=0,
-            display_height=540,
-            display_width=960,
-        )
-    )
-    left_camera.start()
+    vs = cv2.VideoCapture(gstreamer_pipeline(flip_method=0), cv2.CAP_GSTREAMER)
 
-    vs = CSI_Camera()
-    vs.open(
-        gstreamer_pipeline(
-            sensor_id=1,
-            sensor_mode=3,
-            flip_method=0,
-            display_height=540,
-            display_width=960,
-        )
-    )
-    vs.start()
-
-    print('start opencv')
     time.sleep(2.0)
     fps = FPS().start()
     cnt = 0
@@ -227,11 +128,13 @@ def start_app():
         # grab the frame from the threaded video stream, resize it, and
         # grab its imensions
         ret, frame = vs.read()
+  
         #frame = cv2.flip(frame,0)
-        print('working')
+
         frame = cv2.resize(frame, (400,400))
         frame = imutils.resize(frame, width=400) #400
         (fH, fW) = frame.shape[:2]
+
         # if the input queue *is* empty, give the current frame to
         # classify
         if inputQueue.empty():
@@ -273,7 +176,7 @@ def start_app():
                 longitude = 1.123213
                 latitude = 29.545345
                 label_tmp =  "\""+label+"\""
-                print(label)
+                #print(label)
 
                 if "dog" in label or "cat" in label or "horse" in label or "cow" in label:
                     cv2.rectangle(frame, (startX, startY), (endX, endY),COLORS[idx], 2)
@@ -283,7 +186,7 @@ def start_app():
                     pygame.mixer.music.play()
                     animal = label.split(":")
                     pet = str(animal[0])
-                    #print(pet)
+                    print(pet)
                     if cnt == 0 and found_tmp != pet:
                         resp = requests.post('http://cloud.park-cloud.co19.kr/jetson_nano/post-data.php', params=data)
                         cnt = cnt + 1
@@ -291,48 +194,19 @@ def start_app():
                     else:
                         cnt=0
     # show the output frame
-#        cv2.namedWindow("Frame", cv2.WINDOW_NORMAL)
-#        cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.namedWindow("Frame", cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty("Frame", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         #up-side reverse
         #frame = cv2.flip(frame,0)
         #fra  me = np.array(frame ,dtype = object)
-#        frame = cv2.resize(frame, (720,480))
-#        cv2.imshow("Frame", frame)
-#        key = cv2.waitKey(1) & 0xFF
+        frame = cv2.resize(frame, (720,480))
+        cv2.imshow("Frame", frame)
+        key = cv2.waitKey(1) & 0xFF
 
         # if the `q` key was pressed, break from the loop
-#        if key == ord("q"):
-#            break
-        cv2.namedWindow("CSI Cameras", cv2.WINDOW_AUTOSIZE)
+        if key == ord("q"):
+            break
 
-        if (
-            not left_camera.video_capture.isOpened()
-            or not vs.video_capture.isOpened()
-        ):
-        # Cameras did not open, or no camera attached
-
-            print("Unable to open any cameras")
-        # TODO: Proper Cleanup
-            SystemExit(0)
-
-        while cv2.getWindowProperty("CSI Cameras", 0) >= 0 :
-        
-            _ , left_image=left_camera.read()
-            _ , right_image=vs.read()
-            camera_images = np.hstack((left_image, right_image))
-            cv2.imshow("CSI Cameras", camera_images)
-
-        # This also acts as
-            keyCode = cv2.waitKey(30) & 0xFF
-        # Stop the program on the ESC key
-            if keyCode == 27:
-                break
-
-        left_camera.stop()
-        left_camera.release()
-        vs.stop()
-        vs.release()
-        cv2.destroyAllWindows()
         # update the FPS counter
         fps.update()
 
@@ -342,6 +216,9 @@ def start_app():
     print("[INFO] approx. FPS: {:.2f}".format(fps.fps()))
 
     # do a bit of cleanup
+    cv2.destroyAllWindows()
+    vs.stop()
+
 
 
 if __name__ == "__main__":

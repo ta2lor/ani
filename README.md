@@ -34,3 +34,11 @@ then it works
 
 
 #imutils
+
+pip3 install imutils==0.5.3
+
+#pygame
+
+https://www.pygame.org/ftp/pygame-1.9.6.tar.gz
+extract tar file
+python3 setup.py

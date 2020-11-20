@@ -42,3 +42,11 @@ pip3 install imutils==0.5.3
 https://www.pygame.org/ftp/pygame-1.9.6.tar.gz
 extract tar file
 python3 setup.py
+
+
+#request
+pip3 install request
+
+------------------------------
+#mpu6050
+https://www.jetsonhacks.com/2016/01/29/bosch-bno055-imu-interface-over-i2c-nvidia-jetson-tk1-development-kit/

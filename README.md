@@ -50,3 +50,11 @@ pip3 install request
 ------------------------------
 #mpu6050
 https://www.jetsonhacks.com/2016/01/29/bosch-bno055-imu-interface-over-i2c-nvidia-jetson-tk1-development-kit/
+
+
+
+---------------------------------------
+#pygame in python3
+sudo add-apt-repository ppa:thopiekar/pygame
+sudo apt-get update
+sudo apt-get install python3-pygame

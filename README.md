@@ -1,3 +1,4 @@
+![KakaoTalk_20210407_091415184](https://user-images.githubusercontent.com/63273173/113792789-b5b44e00-9781-11eb-9936-9e4c2d5a9dd3.jpg)
 # ani
 sudo python3 pi.py --prototxt MobileNetSSD_deploy.prototxt.txt --model MobileNetSSD_deploy.caffemodel
 
